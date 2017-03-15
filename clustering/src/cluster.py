@@ -145,7 +145,10 @@ class Cluster(object) :
 
         ### ========== TODO : START ========== ###
         # part 2b: implement
-        best_point_and_dist = min([([np.sum([p.distance(k) for k in self.points if k != p])], p) for p in self.points], key = lambda x: x[0])
+        best_point_and_dist = min([([np.sum([p.distance(k)
+                                             for k in self.points if k != p])],
+                                    p) for p in self.points],
+                                  key = lambda x: x[0])
         return best_point_and_dist[1]
         ### ========== TODO : END ========== ###
 

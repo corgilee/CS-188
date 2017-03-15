@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import util
 from util import *
 from cluster import *
+from collections import defaultdict
 
 ######################################################################
 # helper functions
@@ -130,7 +131,7 @@ def random_init(points, k) :
     """
     ### ========== TODO : START ========== ###
     # part 2c: implement (hint: use np.random.choice)
-    return np.random.choice(points, k)
+    return np.random.choice(points, k, replace=False)
     ### ========== TODO : END ========== ###
 
 
@@ -153,8 +154,13 @@ def cheat_init(points) :
     """
     ### ========== TODO : START ========== ###
     # part 2f: implement
-    initial_points = []
-    return initial_points
+    label_to_points = {}
+    for p in points:
+        if p.label in label_to_points:
+            label_to_points[p.label].append(p)
+        else:
+            label_to_points[p.label] = [p]
+    return [Cluster(v).medoid() for _, v in label_to_points.items()]
     ### ========== TODO : END ========== ###
 
 
@@ -168,10 +174,13 @@ def compute_assignments_kMeans(clusters, points):
     """
     assigns = {}
     for p in points:
-        min_dist_and_idx = min([(p.distance(clusters[i]),i)
-                                for i in range(len(clusters))],
-                               key = lambda x: x[0])
-        idx = min_dist_and_idx[1]
+        min_dist, idx = np.Inf, -1
+        for i in range(len(clusters)):
+            dst = p.distance(clusters[i])
+            if dst < min_dist:
+                min_dist, idx = dst, i
+
+
         if idx in assigns:
             assigns[idx].append(p)
         else:
@@ -179,7 +188,7 @@ def compute_assignments_kMeans(clusters, points):
     return assigns
 
 
-def kMeans(points, k, init='random', plot=False) :
+def kMeans(points, k, init='random', plot=False, verbose = False) :
     """
     Cluster points into k clusters using variations of k-means algorithm.
 
@@ -210,55 +219,66 @@ def kMeans(points, k, init='random', plot=False) :
     #       a new ClusterSet object and update the centroids.
     #   (2) Repeat until the clustering no longer changes.
     #   (3) To plot, use plot_clusters(...).
-    cur_centroids = random_init(points, k) if init == 'random' else cheat_init(points, k)
-    iters = 0
+    if init == 'random':
+        cur_centroids = random_init(points, k)
+        if verbose: print "random init in use"
+    else:
+        cur_centroids =  cheat_init(points)
+        if verbose: print "cheat init in use"
+    iters = 1
     prev_clusts = None
     while True:
         cur_cluster_set = ClusterSet([Cluster(v) for _, v
-                                      in compute_assignments_kMeans(
-                                          cur_centroids, points).items()])
-        iters+=1
-        print "iters: {}".format(iters)
+                                       in compute_assignments_kMeans(
+                                           cur_centroids, points).items()])
+        if verbose: print "iters: {}".format(iters)
         if prev_clusts is not None and cur_cluster_set.equivalent(prev_clusts):
-            print "Done in {} iters".format(iters)
+            if verbose: print "Done in {} iters".format(iters)
             return cur_cluster_set
         else:
             prev_clusts = cur_cluster_set
-        if plot: plot_clusters(cur_cluster_set, 'Plot of kMeans Clusters', ClusterSet.centroids)
-        new_centroids = cur_cluster_set.centroids()
-        cur_centroids = new_centroids
+            iters+=1
+        if plot: plot_clusters(cur_cluster_set, 'Plot of kMeans Clusters',
+                               ClusterSet.centroids)
+        cur_centroids = cur_cluster_set.centroids()
 
     k_clusters = ClusterSet()
     return k_clusters
     ### ========== TODO : END ========== ###
 
 
-def kMedoids(points, k, init='random', plot=False) :
+def kMedoids(points, k, init='random', plot=False, verbose = False) :
     """
     Cluster points in k clusters using k-medoids clustering.
     See kMeans(...).
     """
     ### ========== TODO : START ========== ###
     # part 2e: implement
-    cur_centroids = random_init(points, k) if init == 'random' else cheat_init(points, k)
-    iters = 0
+    if init == 'random':
+        cur_centroids = random_init(points, k)
+        if verbose: print "random init in use"
+    else:
+        cur_centroids =  cheat_init(points)
+        if verbose: print "cheat init in use"
+    iters = 1
     prev_clusts = None
     while True:
+        for c in cur_centroids:
+            assert(c in points)
         # compute assignments
-        assignments = compute_assignments_kMeans(cur_centroids, points)
-        clusts = [Cluster(v) for _, v in assignments.items()]
-        cur_cluster_set = ClusterSet(clusts)
-        iters+=1
-        print "iters: {}".format(iters)
+        cur_cluster_set = ClusterSet([Cluster(v) for _, v
+                                      in compute_assignments_kMeans(
+                                          cur_centroids, points).items()])
+        if verbose: print "iters: {}".format(iters)
         if prev_clusts is not None and cur_cluster_set.equivalent(prev_clusts):
-            print "Done in {} iters".format(iters)
+            if verbose: print "Done in {} iters".format(iters)
             return cur_cluster_set
         else:
             prev_clusts = cur_cluster_set
-        for c in clusts: assert(c in cur_cluster_set.members)
-        if plot: plot_clusters(cur_cluster_set, 'Plot of KMediods Clusters', ClusterSet.medoids)
-        new_centroids = cur_cluster_set.medoids()
-        cur_centroids = new_centroids
+            iters+=1
+        if plot: plot_clusters(cur_cluster_set, 'Plot of KMediods Clusters',
+                               ClusterSet.medoids)
+        cur_centroids = cur_cluster_set.medoids()
 
     k_clusters = ClusterSet()
     return k_clusters
@@ -292,10 +312,14 @@ def main() :
     print "generating data for clustering"
     np.random.seed(1234)
     pts = generate_points_2d(20)
-    cluster_set = kMeans(pts, 3, plot = True)
-    another_cluster_set = kMedoids(pts, 3, plot = True)
-    exit()
-
+    cluster_set = kMeans(pts, 3, plot = False, verbose = True) # 2
+    print "random init kmeans score: {}".format(cluster_set.score())
+    another_cluster_set = kMedoids(pts, 3, plot = False, verbose = True) #2
+    print "random init kmedoids score: {}".format(another_cluster_set.score())
+    km_clust_2 = kMeans(pts, 3, init = 'cheat', plot = False, verbose = True) #2
+    print "cheat init kmeans score: {}".format(km_clust_2.score())
+    k_med_clust_2 = kMedoids(pts, 3, init='cheat', plot = False, verbose = True) #2
+    print "cheat init medoids score: {}".format(k_med_clust_2.score())
 
     ### ========== TODO : END ========== ###
 
@@ -304,12 +328,68 @@ def main() :
     ### ========== TODO : START ========== ###
     # part 3a: cluster faces
     np.random.seed(1234)
+    X1, y1 = util.limit_pics(X, y, [4, 6, 13, 16], 40)
+    points = build_face_image_points(X1, y1)
+    kmeans_scores, kmed_scores = [], []
+    for i in range(10):
+        print "running k-means and k-medoids for the {}th time".format(i+1)
+        cluster_set = kMeans(points, 4)
+        kmeans_scores.append(cluster_set.score())
+        kmed_set = kMedoids(points, 4)
+        kmed_scores.append(kmed_set.score())
+    means_avg, means_max, means_min = np.mean(np.array(kmeans_scores)), max(kmeans_scores), min(kmeans_scores)
+    med_avg, med_max, med_min = np.mean(np.array(kmed_scores)), max(kmed_scores), min(kmed_scores)
+    print "K means average: {}, max: {}, min: {}".format(means_avg,
+                                                         means_max, means_min)
+    print "K medoids average: {}, max: {}, min: {}".format(med_avg,
+                                                           med_max, med_min)
 
     # part 3b: explore effect of lower-dimensional representations on clustering performance
     np.random.seed(1234)
+    X2, y2 = util.limit_pics(X, y, [4, 6, 13, 16], 40)
+    l_kmeans = {}
+    l_kmed = {}
+    for l in range(1,42):
+        if l % 5 == 0: print "iteration: l = {}".format(l)
+        Z, Ul = apply_PCA_from_Eig(X2, U, l, mu)
+        X2_rec = reconstruct_from_PCA(Z, Ul, mu)
+        points = build_face_image_points(X2_rec, y2)
+        kmeans_clust = kMeans(points, 2, init='cheat')
+        kmed_clust = kMedoids(points, 2, init='cheat')
+        l_kmeans[l] = kmeans_clust.score()
+        l_kmed[l] = kmed_clust.score()
+    #print l_kmeans.items()
+    plt.plot(list(l_kmeans.keys()), list(l_kmeans.values()), 'r', label='K means')
+    plt.plot(list(l_kmed.keys()), list(l_kmed.values()), 'b', label='K medoids')
+    plt.title('K-means and K-medoids score with respect to principal components')
+    plt.xlabel('Number of principal components')
+    plt.ylabel('Clustering score')
+    plt.legend()
+    plt.show()
+    #print l_kmed.items()
 
+    # TODO - plot these
     # part 3c: determine ``most discriminative'' and ``least discriminative'' pairs of images
+    max_score, min_score = (-1, None, None), (np.Inf, None, None)
     np.random.seed(1234)
+    for i in range(0,19):
+        for j in range(0,19):
+            if i != j:
+                if i % 5 == 0 or j % 5 == 0: print "considering groups {} and \
+                {}".format(i,j)
+                X_ij, y_ij = util.limit_pics(X, y, [i,j], 40)
+                points = build_face_image_points(X_ij, y_ij)
+                med_clust = kMedoids(points, 2, init='cheat')
+                score = med_clust.score()
+                if score < min_score[0]:
+                    min_score = (score, i, j)
+                if score > max_score[0]:
+                    max_score = (score, i, j)
+    print max_score
+    print min_score
+
+
+
 
     ### ========== TODO : END ========== ###
 
