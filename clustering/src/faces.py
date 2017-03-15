@@ -179,8 +179,6 @@ def compute_assignments_kMeans(clusters, points):
             dst = p.distance(clusters[i])
             if dst < min_dist:
                 min_dist, idx = dst, i
-
-
         if idx in assigns:
             assigns[idx].append(p)
         else:
@@ -296,13 +294,15 @@ def main() :
     mean_face = np.mean(X, axis = 0)
     U, mu = PCA(X)
     assert(np.sum(np.abs(mean_face - mu)) == 0)
-    #show_image(vec_to_image(mu)) #PART A
+    show_image(vec_to_image(mu)) #PART A
     num_eigenfaces_to_plot = 12
-    #plot_gallery([vec_to_image(U[:,i]) for i in xrange(num_eigenfaces_to_plot)]) #PART B
+    plot_gallery([vec_to_image(U[:,i])
+                  for i in xrange(num_eigenfaces_to_plot)]) #PART B
     for l in [1,10,50,100,500,1288]:
         Z, Ul = apply_PCA_from_Eig(X, U, l, mu)
         X_rec = reconstruct_from_PCA(Z, Ul, mu)
-        #plot_gallery([vec_to_image(X_rec[i]) for i in xrange(num_eigenfaces_to_plot)]) #PART C
+        plot_gallery([vec_to_image(X_rec[i])
+                      for i in xrange(num_eigenfaces_to_plot)]) #PART C
     ### ========== TODO : END ========== ###
 
 
@@ -312,14 +312,10 @@ def main() :
     print "generating data for clustering"
     np.random.seed(1234)
     pts = generate_points_2d(20)
-    cluster_set = kMeans(pts, 3, plot = False, verbose = True) # 2
-    print "random init kmeans score: {}".format(cluster_set.score())
-    another_cluster_set = kMedoids(pts, 3, plot = False, verbose = True) #2
-    print "random init kmedoids score: {}".format(another_cluster_set.score())
-    km_clust_2 = kMeans(pts, 3, init = 'cheat', plot = False, verbose = True) #2
-    print "cheat init kmeans score: {}".format(km_clust_2.score())
-    k_med_clust_2 = kMedoids(pts, 3, init='cheat', plot = False, verbose = True) #2
-    print "cheat init medoids score: {}".format(k_med_clust_2.score())
+    cluster_set = kMeans(pts, 3, plot = True, verbose = True) # 2
+    another_cluster_set = kMedoids(pts, 3, plot = True, verbose = True) #2
+    km_clust_2 = kMeans(pts, 3, init = 'cheat', plot = True, verbose = True) #2
+    k_med_clust_2 = kMedoids(pts, 3, init='cheat', plot = True, verbose = True) #2
 
     ### ========== TODO : END ========== ###
 
@@ -358,7 +354,6 @@ def main() :
         kmed_clust = kMedoids(points, 2, init='cheat')
         l_kmeans[l] = kmeans_clust.score()
         l_kmed[l] = kmed_clust.score()
-    #print l_kmeans.items()
     plt.plot(list(l_kmeans.keys()), list(l_kmeans.values()), 'r', label='K means')
     plt.plot(list(l_kmed.keys()), list(l_kmed.values()), 'b', label='K medoids')
     plt.title('K-means and K-medoids score with respect to principal components')
@@ -366,17 +361,17 @@ def main() :
     plt.ylabel('Clustering score')
     plt.legend()
     plt.show()
-    #print l_kmed.items()
+    print l_kmed.items()
 
-    # TODO - plot these
     # part 3c: determine ``most discriminative'' and ``least discriminative'' pairs of images
     max_score, min_score = (-1, None, None), (np.Inf, None, None)
+    min_tup, max_tup = (None, None, []), (None, None, [])
     np.random.seed(1234)
     for i in range(0,19):
         for j in range(0,19):
             if i != j:
-                if i % 5 == 0 or j % 5 == 0: print "considering groups {} and \
-                {}".format(i,j)
+                if i % 5 == 0 and j % 5 == 0:
+                    print "considering groups {} and {}".format(i,j)
                 X_ij, y_ij = util.limit_pics(X, y, [i,j], 40)
                 points = build_face_image_points(X_ij, y_ij)
                 med_clust = kMedoids(points, 2, init='cheat')
@@ -387,6 +382,13 @@ def main() :
                     max_score = (score, i, j)
     print max_score
     print min_score
+    assert(min_score[1] == 4 and min_score[2] == 5)
+    plot_representative_images(X, y, [min_score[1], min_score[2]],
+                               title = 'min score images')
+    assert(max_score[1] == 9 and max_score[2] == 16)
+    plot_representative_images(X, y, [max_score[1], max_score[2]],
+                               title = 'max score images')
+
 
 
 
