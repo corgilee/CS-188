@@ -302,15 +302,15 @@ def main() :
     mean_face = np.mean(X, axis = 0)
     U, mu = PCA(X)
     assert(np.sum(np.abs(mean_face - mu)) == 0)
-    show_image(vec_to_image(mu)) #PART A
+    #show_image(vec_to_image(mu)) #PART A
     num_eigenfaces_to_plot = 12
-    plot_gallery([vec_to_image(U[:,i])
-                  for i in xrange(num_eigenfaces_to_plot)]) #PART B
+    #plot_gallery([vec_to_image(U[:,i])
+    #              for i in xrange(num_eigenfaces_to_plot)]) #PART B
     for l in [1,10,50,100,500,1288]:
         Z, Ul = apply_PCA_from_Eig(X, U, l, mu)
         X_rec = reconstruct_from_PCA(Z, Ul, mu)
-        plot_gallery([vec_to_image(X_rec[i])
-                      for i in xrange(num_eigenfaces_to_plot)]) #PART C
+    #    plot_gallery([vec_to_image(X_rec[i])
+    #                  for i in xrange(num_eigenfaces_to_plot)]) #PART C
     ### ========== TODO : END ========== ###
 
 
@@ -361,6 +361,7 @@ def main() :
                                                          means_max, means_min)
     print "K medoids average: {}, max: {}, min: {}".format(med_avg,
                                                            med_max, med_min)
+    exit()
 
     # part 3b: explore effect of lower-dimensional representations on clustering performance
     np.random.seed(1234)
